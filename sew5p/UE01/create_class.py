@@ -1,23 +1,19 @@
 '''
-@Author: Nik Sauer 
+@Author: Nik Sauer
 '''
 import argparse
 import random
-import string
 import sys
 import unicodedata
-from typing import Generator, Tuple
+from typing import Generator, List, Tuple
 
 import openpyxl
 from openpyxl import load_workbook
 import logging
 import logging.handlers
 
-import unidecode
-import re
-
 logger = logging.getLogger(__name__)
-handler = logging.handlers.RotatingFileHandler("create_user.log", maxBytes=10000, backupCount=5)
+handler = logging.handlers.RotatingFileHandler("create_class.log", maxBytes=10000, backupCount=5)
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 
@@ -30,7 +26,6 @@ logger.addHandler(stream_handler)
 verbose = False
 quiet = False
 
-existing_user = []
 
 def read_file(path: str) -> Generator:
     """
@@ -44,11 +39,9 @@ def read_file(path: str) -> Generator:
         for row in ws.iter_rows(min_row=2):
             if all(cell.value is None for cell in row):
                 continue
-            # firstname	lastname	group	class
-            yield (row[0].value, row[1].value, row[2].value, row[3].value)
+            yield [row[0].value, row[1].value, row[2].value]
     except:
         logger.error("Datei nicht gefunden")
-
 def shave_marks(s: str) -> str:
     """
     Remove all diacritic marks
@@ -80,85 +73,47 @@ def replace_umlaut(s: str) -> str:
         s = s.replace(umlaut, replacement)
     return shave_marks(s)
 
-def check_name(name: str) -> str:
+def create_user(i: List[str], file, pwd: str) -> None:
     """
-    überprüft ob name passt
-    :param name:
-    :return:
-    """
-    name = unidecode.unidecode(name)
-
-    name = replace_umlaut(name) 
-
-    name = name.lower()
-    name = name.replace(' ', '_')
-    name = re.sub(r'[^a-z0-9_]', '', name)
-    return name
-
-
-def generate_unique_name(name: str) -> str:
-    """
-    Generiert einen eindeutigen namen
-    :param name:
-    :return:
-    """
-    global existing_user
-    if name not in existing_user:
-        existing_user.append(name)
-        return name
-    index = 1
-    while f"{name}{index}" in existing_user:
-        index += 1
-    new_name = f"{name}{index}"
-    existing_user.append(new_name)
-    return new_name
-
-def create_user(file, pwd: str, first_name: str, last_name: str, group: str, class_name: str) -> None:
-    """
-    UserCreates (Commands) erstellen
+    UserCreates (Commands) erstellen und in file schreiben
+    :param i:
     :param file:
     :param pwd:
-    :param first_name:
-    :param last_name:
-    :param group:
-    :param class_name:
     :return:
     """
-    logger.info(f"Creating user: {first_name}_{last_name}")
+    logger.info(f"Creating user: {i[0]}")
     if verbose:
-        print(f"echo creating user: {first_name}_{last_name}", file=file)
-
+        print(f"echo creating user: {i[0]}", file=file)
     command1 = (
-        f"getent passwd {first_name}_{last_name} > /dev/null && "
-        f"echo 'User {first_name}_{last_name} already exists. Aborting.' && "
-        f"exit 1 || true"
+        f"getent passwd k{replace_umlaut(str(i[0]).lower())} > /dev/null && echo 'User " 
+        f"{replace_umlaut(str(i[0]).lower())} already exists. Aborting.' && exit 1 || true"
     )
-
-    command2 = f"groupadd {last_name}"
+    command2 = f"groupadd {replace_umlaut(str(i[0]).lower())}"
 
     command3 = (
-        f"useradd -d /home/{last_name} -c {last_name} "
-        f"-m -g {last_name} -G {group},{class_name} "
-        f"-s /bin/bash {first_name}_{last_name}"
+        f"useradd -d /home/klassen/{replace_umlaut(str(i[0]).lower())} "
+        f"-c k{replace_umlaut(str(i[0]).lower())} "
+        f"-m -g {replace_umlaut(str(i[0]).lower())} "
+        f"-G cdrom,plugdev,sambashare -s /bin/bash k{replace_umlaut(str(i[0]).lower())}"
     )
-    command4 = f"echo {first_name}_{last_name}:{escape_quote(pwd)} | chpasswd"
+
+    command4 = f"echo {replace_umlaut(str(i[0]).lower())}:{escape_quote(pwd)} | chpasswd"
 
     print(command1, file=file)
     print(command2, file=file)
     print(command3, file=file)
     print(command4, file=file)
 
-def delete_user(file, first_name: str, last_name: str) -> None:
+def delete_user(i: List[str], file) -> None:
     """
     Löscht einen User
+    :param i:
     :param file:
-    :param first_name:
-    :param last_name:
     :return:
     """
-    logger.info(f"Deleting user: {first_name}_{last_name}")
-    if verbose: print(f"echo deleting user: {first_name}_{last_name}", file=file)
-    command = f"userdel -r {first_name}_{last_name}"
+    logger.info(f"Deleting user: {i[0]}")
+    if verbose: print(f"echo deleting user: {i[0]}", file=file)
+    command = "userdel -r k" + replace_umlaut(str(i[0]).lower())
     print(command, file=file)
 
 def create_credentials() -> Tuple[openpyxl.workbook.workbook.Workbook, openpyxl.worksheet.worksheet.Worksheet]:
@@ -182,30 +137,35 @@ def escape_quote(s: str) -> str:
     """
     return s.replace('"', '\\"').replace("'", "\\'").replace("`", "\\`")
 
-def generate_password(length: int, passwordList: set) -> str:
+def generate_password(class_name: str, room: str, kv: str, passwordList:set) -> str:
     """
     erzeugt ein password
-    :param length:
+    :param class_name:
+    :param room:
+    :param kv:
+    :param passwordList:
     :return:
     """
-    characters = string.ascii_letters + string.digits + string.punctuation
+    logger.info("Generating password")
+    chars = "1%&(),._-=^#"
     while True:
-        password = ''.join(random.choice(characters) for i in range(length))
+        random_chars = [random.choice(chars) for _ in range(3)]
+        password = f"{class_name}{random_chars[0]}{room}{random_chars[1]}{kv}{random_chars[2]}"
         if password not in passwordList:
             break
     return password
 
-def add_credentials(sheet, row: int, pwd: str, user_name: str) -> None:
+def add_credentials(sheet: openpyxl.worksheet.worksheet.Worksheet, name: str, row: int, pwd: str) -> None:
     """
     Fügt creds zum Excel
     :param sheet:
+    :param i:
     :param row:
     :param pwd:
-    :param user_name:
     :return:
     """
-
-    sheet[f"A{row}"] = user_name
+    logger.info(f"Adding credentials for user: {name}")
+    sheet[f"A{row}"] = name
     sheet[f"B{row}"] = pwd
 
 def save_credentials(workbook: openpyxl.workbook.workbook.Workbook) -> None:
@@ -217,6 +177,33 @@ def save_credentials(workbook: openpyxl.workbook.workbook.Workbook) -> None:
     logger.info("Saving credentials to file")
     workbook.save("user_credentials.xlsx")
 
+
+def create_user_by_name(username: str, create_file, delete_file) -> None:
+    """
+    erzeugt mit einem namen einen user und das zugehörige delete file
+    :param username:
+    :param create_file:
+    :param delete_file:
+    :return:
+    """
+    logger.info(f"Creating user: {username}")
+    if verbose: print(f"echo creating user: {username}", file=create_file)
+
+    command1 = f"getent passwd {username} > /dev/null && echo 'User {username} already exists. Aborting.' && exit 1 || true"
+    command2 = f"groupadd {username}"
+    command3 = f"useradd -d /home/{username} -c {username} -m -g {username} -s /bin/bash {username}"
+    command4 = f"echo {username}:{username} | chpasswd"
+
+    print(command1, file=create_file)
+    print(command2, file=create_file)
+    print(command3, file=create_file)
+    print(command4, file=create_file)
+
+    logger.info(f"Deleting user: {username}")
+    if verbose: print(f"echo deleting user: {username}", file=delete_file)
+    command = "userdel -r " + username
+    print(command, file=delete_file)
+
 def create_files(path: str) -> None:
     """
     Itariert durch alle User und erzeugt die dazugehörigen files
@@ -225,37 +212,31 @@ def create_files(path: str) -> None:
     """
     logger.info("Starting file creation")
     worksheet, sheet = create_credentials()
-    row = 2
-    with open("create_user.sh", "w", encoding="UTF-8") as create_user_file, open("delete_user.sh", "w", encoding="UTF-8") as delete_user_file:
+    row = 4
+    with open("create_user.sh", "w") as create_user_file, open("delete_user.sh", "w") as delete_user_file:
         print("#!/bin/bash", file=create_user_file)
         print("#!/bin/bash", file=delete_user_file)
-
         print("set -e", file=create_user_file)
         print("set -e", file=delete_user_file)
 
-        print("mkdir /home", file=create_user_file)
+        print("mkdir /home/klassen", file=create_user_file)
 
-        verwendetePWSs = set()
-
-        for firstname, lastname, group, _class in read_file(path):
-            first_name = check_name(str(firstname).lower())
-
-            last_name = generate_unique_name(check_name(str(lastname).lower()))
-
-            group = str(group).lower()
-            class_name = str(_class)
-
-            pwd = generate_password(12, verwendetePWSs)
-
-            verwendetePWSs.add(pwd)
-            create_user(create_user_file, pwd, first_name, last_name, group, class_name)
-            delete_user(delete_user_file, first_name, last_name)
-            add_credentials(sheet, row, pwd, last_name)
-
+        create_user_by_name("lehrer", create_user_file, delete_user_file)
+        add_credentials(sheet, "lehrer", 2, "lehrer")
+        create_user_by_name("seminar", create_user_file, delete_user_file)
+        add_credentials(sheet, "seminar", 3, "seminar")
+        verwendetePWDs = set()
+        for i in read_file(path):
+            if i[0] == None:
+                continue
+            pwd = generate_password(str(i[0]).lower(), str(i[1]).lower(), str(i[2]).lower(), verwendetePWDs)
+            verwendetePWDs.add(pwd)
+            create_user(i, create_user_file, pwd)
+            delete_user(i, delete_user_file)
+            add_credentials(sheet, i[0], row, pwd)
             row += 1
     save_credentials(worksheet)
     logger.info("Files created")
-
 
 def configure_logging():
     """
@@ -274,43 +255,23 @@ def configure_logging():
 
 def main():
     global verbose, quiet
-
     parser = argparse.ArgumentParser()
     parser.add_argument("filename", type=str, help="filename")
-
-    loglevel = parser.add_mutually_exclusive_group()
-    loglevel.add_argument("-v", "--verbose", action="store_true", help="activates verbose mode")
-    loglevel.add_argument("-q", "--quiet", action="store_true", help="activates quite mode")
-
+    parser.add_argument("-v", "--verbose", action="store_true", help="activates verbose mode")
+    parser.add_argument("-q", "--quiet", action="store_true", help="activates quite mode")
     args = parser.parse_args()
-
     print(args.filename)
-
     path = args.filename
+
     verbose = args.verbose
     quiet = args.quiet
-
     configure_logging()
-
     try:
         create_files(path)
     except FileNotFoundError:
         logger.error("File not found")
 
+
+
 if __name__ == "__main__":
     main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
