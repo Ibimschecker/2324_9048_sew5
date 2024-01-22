@@ -61,6 +61,25 @@ def shave_marks(s: str) -> str:
     return unicodedata.normalize('NFC', shaved)
 
 
+def replace_umlaut(s: str) -> str:
+    """
+    Ersetzt Umlaute
+    :param s:
+    :return:
+    """
+    replacements = {
+        'ä': 'ae',
+        'ö': 'oe',
+        'ü': 'ue',
+        'Ä': 'Ae',
+        'Ö': 'Oe',
+        'Ü': 'Ue',
+        'ß': 'ss'
+    }
+    for umlaut, replacement in replacements.items():
+        s = s.replace(umlaut, replacement)
+    return shave_marks(s)
+
 
 def create_files(path: str) -> None:
     """
