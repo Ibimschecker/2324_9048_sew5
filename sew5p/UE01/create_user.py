@@ -80,6 +80,22 @@ def replace_umlaut(s: str) -> str:
         s = s.replace(umlaut, replacement)
     return shave_marks(s)
 
+def check_name(name: str) -> str:
+    """
+    überprüft ob name passt
+    :param name:
+    :return:
+    """
+    name = unidecode.unidecode(name)
+
+    name = replace_umlaut(name) 
+
+    name = name.lower()
+    name = name.replace(' ', '_')
+    name = re.sub(r'[^a-z0-9_]', '', name)
+    return name
+
+
 
 def create_files(path: str) -> None:
     """
