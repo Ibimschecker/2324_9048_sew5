@@ -161,6 +161,19 @@ def delete_user(file, first_name: str, last_name: str) -> None:
     command = f"userdel -r {first_name}_{last_name}"
     print(command, file=file)
 
+def create_credentials() -> Tuple[openpyxl.workbook.workbook.Workbook, openpyxl.worksheet.worksheet.Worksheet]:
+    """
+    Erzeugt excel worksheet für creds
+    :return:
+    """
+    logger.info("Creating credentials sheet")
+    workbook = openpyxl.Workbook()
+    sheet = workbook.active
+
+    sheet["A1"] = "Username"
+    sheet["B1"] = "Password"
+    return workbook, sheet
+
 
 
 
