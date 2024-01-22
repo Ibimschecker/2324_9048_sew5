@@ -33,6 +33,45 @@ quiet = False
 existing_user = []
 
 
+def create_files(path: str) -> None:
+    """
+    Itariert durch alle User und erzeugt die dazugehörigen files
+    :param path:
+    :return:
+    """
+    logger.info("Starting file creation")
+    worksheet, sheet = create_credentials()
+    row = 2
+    with open("create_user.sh", "w", encoding="UTF-8") as create_user_file, open("delete_user.sh", "w", encoding="UTF-8") as delete_user_file:
+        print("#!/bin/bash", file=create_user_file)
+        print("#!/bin/bash", file=delete_user_file)
+
+        print("set -e", file=create_user_file)
+        print("set -e", file=delete_user_file)
+
+        print("mkdir /home", file=create_user_file)
+
+        verwendetePWSs = set()
+
+        for firstname, lastname, group, _class in read_file(path):
+            first_name = check_name(str(firstname).lower())
+
+            last_name = generate_unique_name(check_name(str(lastname).lower()))
+
+            group = str(group).lower()
+            class_name = str(_class)
+
+            pwd = generate_password(12, verwendetePWSs)
+
+            verwendetePWSs.add(pwd)
+            create_user(create_user_file, pwd, first_name, last_name, group, class_name)
+            delete_user(delete_user_file, first_name, last_name)
+            add_credentials(sheet, row, pwd, last_name)
+
+            row += 1
+    save_credentials(worksheet)
+    logger.info("Files created")
+
 
 
 
