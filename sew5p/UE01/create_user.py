@@ -49,6 +49,18 @@ def read_file(path: str) -> Generator:
     except:
         logger.error("Datei nicht gefunden")
 
+def shave_marks(s: str) -> str:
+    """
+    Remove all diacritic marks
+    :param s:
+    :return:
+    """
+    norm_txt = unicodedata.normalize('NFD', s)
+    shaved = ''.join(c for c in norm_txt
+                     if not unicodedata.combining(c))
+    return unicodedata.normalize('NFC', shaved)
+
+
 
 def create_files(path: str) -> None:
     """
