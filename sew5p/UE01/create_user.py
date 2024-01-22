@@ -32,6 +32,23 @@ quiet = False
 
 existing_user = []
 
+def read_file(path: str) -> Generator:
+    """
+    Liest Excel datei und gibt zeilen aus (Yield)
+    :param path:
+    :return:
+    """
+    try:
+        wb = load_workbook(path, read_only=True)
+        ws = wb[wb.sheetnames[0]]
+        for row in ws.iter_rows(min_row=2):
+            if all(cell.value is None for cell in row):
+                continue
+            # firstname	lastname	group	class
+            yield (row[0].value, row[1].value, row[2].value, row[3].value)
+    except:
+        logger.error("Datei nicht gefunden")
+
 
 def create_files(path: str) -> None:
     """
