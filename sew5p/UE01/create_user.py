@@ -148,6 +148,20 @@ def create_user(file, pwd: str, first_name: str, last_name: str, group: str, cla
     print(command3, file=file)
     print(command4, file=file)
 
+def delete_user(file, first_name: str, last_name: str) -> None:
+    """
+    Löscht einen User
+    :param file:
+    :param first_name:
+    :param last_name:
+    :return:
+    """
+    logger.info(f"Deleting user: {first_name}_{last_name}")
+    if verbose: print(f"echo deleting user: {first_name}_{last_name}", file=file)
+    command = f"userdel -r {first_name}_{last_name}"
+    print(command, file=file)
+
+
 
 
 
