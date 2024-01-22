@@ -36,12 +36,11 @@ def print_grid(vis, r = - 1, c = -1):
             if i == r and j == c:
                 print('O', end='')
             elif (i, j) in vis:
-                print('X', end='')
+                print('·', end='')
             else:
                 print(grid[i][j], end='')
         print()
     print()
-
 
 def bfs(xstart, ystart):
     q = deque()
@@ -51,6 +50,7 @@ def bfs(xstart, ystart):
         r, c = q.popleft()
 
         if r == target[0] and c == target[1]:
+            print_grid(vis, r, c)
             return True
 
         if (r, c) in vis:
@@ -90,5 +90,5 @@ def dfs(r, c, vis = set()):
 
 start = int(args.XSTART), int(args.YSTART)
 
-print(bfs(start[0], start[1]))
+#print(bfs(start[0], start[1]))
 print(dfs(start[0], start[1]))

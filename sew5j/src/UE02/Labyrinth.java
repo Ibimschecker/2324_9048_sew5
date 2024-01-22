@@ -73,11 +73,9 @@ public class Labyrinth {
      */
     public static char[][] fromStrings(String[] map) {
         int R = map.length, C = map[0].length();
-        char[][] g = new char[R][C];
+        char[][] g = new char[R][];
         for(int i=0; i<R; i++){
-            for(int j=0; j<C; j++){
-                g[i][j] = map[i].charAt(j);
-            }
+            g[i]=map[i].toCharArray();
         }
         return g;
     }
@@ -91,7 +89,6 @@ public class Labyrinth {
             System.out.println(lab[i]);
         }
     }
-
     record Pair(int a, int b){};
     /**
      * Suche den Weg
@@ -109,7 +106,7 @@ public class Labyrinth {
 
         while (!q.isEmpty()){
             Pair p = q.pollFirst();
-            if(p.a >= R || p.a < 0 || p.b >= C || p.b < 0 || vis[p.a][p.b] || lab[p.a][p.b]=='#')
+            if(vis[p.a][p.b] || lab[p.a][p.b]=='#')
                 continue;
 
             if(lab[p.a][p.b]=='A')
@@ -126,7 +123,7 @@ public class Labyrinth {
     }
 
     public static int dfs(int r, int c, char[][] g, boolean[][] vis){
-        if(r < 0 || r >= g.length || c < 0 || c >= g[0].length || vis[r][c] || g[r][c]=='#')
+        if(vis[r][c] || g[r][c]=='#')
             return 0;
         if(g[r][c]=='A')
             return 1;
@@ -137,9 +134,12 @@ public class Labyrinth {
     }
 
     public static void main(String[] args) throws InterruptedException {
+        long t = System.currentTimeMillis();
         char[][] labyrinth = fromStrings(maps[3]);
-        printLabyrinth(labyrinth);
-        System.out.println(suchen(1, 1, labyrinth));
+        //printLabyrinth(labyrinth);
+        //System.out.println(suchen(1, 1, labyrinth));
         System.out.println(dfs(1, 1, labyrinth, new boolean[labyrinth.length][labyrinth[0].length]));
+
+        System.out.println((System.currentTimeMillis() - t) + "ms");
     }
 }
