@@ -96,6 +96,24 @@ def check_name(name: str) -> str:
     return name
 
 
+def generate_unique_name(name: str) -> str:
+    """
+    Generiert einen eindeutigen namen
+    :param name:
+    :return:
+    """
+    global existing_user
+    if name not in existing_user:
+        existing_user.append(name)
+        return name
+    index = 1
+    while f"{name}{index}" in existing_user:
+        index += 1
+    new_name = f"{name}{index}"
+    existing_user.append(new_name)
+    return new_name
+
+
 
 def create_files(path: str) -> None:
     """
