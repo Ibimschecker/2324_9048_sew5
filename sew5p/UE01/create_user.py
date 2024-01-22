@@ -113,6 +113,42 @@ def generate_unique_name(name: str) -> str:
     existing_user.append(new_name)
     return new_name
 
+def create_user(file, pwd: str, first_name: str, last_name: str, group: str, class_name: str) -> None:
+    """
+    UserCreates (Commands) erstellen
+    :param file:
+    :param pwd:
+    :param first_name:
+    :param last_name:
+    :param group:
+    :param class_name:
+    :return:
+    """
+    logger.info(f"Creating user: {first_name}_{last_name}")
+    if verbose:
+        print(f"echo creating user: {first_name}_{last_name}", file=file)
+
+    command1 = (
+        f"getent passwd {first_name}_{last_name} > /dev/null && "
+        f"echo 'User {first_name}_{last_name} already exists. Aborting.' && "
+        f"exit 1 || true"
+    )
+
+    command2 = f"groupadd {last_name}"
+
+    command3 = (
+        f"useradd -d /home/{last_name} -c {last_name} "
+        f"-m -g {last_name} -G {group},{class_name} "
+        f"-s /bin/bash {first_name}_{last_name}"
+    )
+    command4 = f"echo {first_name}_{last_name}:{escape_quote(pwd)} | chpasswd"
+
+    print(command1, file=file)
+    print(command2, file=file)
+    print(command3, file=file)
+    print(command4, file=file)
+
+
 
 
 def create_files(path: str) -> None:
