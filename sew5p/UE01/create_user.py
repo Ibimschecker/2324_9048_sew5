@@ -174,7 +174,39 @@ def create_credentials() -> Tuple[openpyxl.workbook.workbook.Workbook, openpyxl.
     sheet["B1"] = "Password"
     return workbook, sheet
 
+def escape_quote(s: str) -> str:
+    """
+    ersetzt sonderzeichen (",',`) sodass es ein normaler string ist und diese richtig angezeigt werden
+    :param s:
+    :return:
+    """
+    return s.replace('"', '\\"').replace("'", "\\'").replace("`", "\\`")
 
+def generate_password(length: int, passwordList: set) -> str:
+    """
+    erzeugt ein password
+    :param length:
+    :return:
+    """
+    characters = string.ascii_letters + string.digits + string.punctuation
+    while True:
+        password = ''.join(random.choice(characters) for i in range(length))
+        if password not in passwordList:
+            break
+    return password
+
+def add_credentials(sheet, row: int, pwd: str, user_name: str) -> None:
+    """
+    Fügt creds zum Excel
+    :param sheet:
+    :param row:
+    :param pwd:
+    :param user_name:
+    :return:
+    """
+
+    sheet[f"A{row}"] = user_name
+    sheet[f"B{row}"] = pwd
 
 
 
